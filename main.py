@@ -1,8 +1,8 @@
 #!E:\Alejandro\Python\Scripts\python
 import tcod
 
-from actions import EscapeAction, MovementAction
-from input_handlers import EventHandler
+from scripts.actions import EscapeAction, MovementAction
+from scripts.input_handlers import EventHandler
 
 
 def main():
