@@ -6,6 +6,9 @@ colors = {} #dict of colors
 class RGB(Color):
 	def hex_format(self):
 		return '#{:02X}{:02X}{:02X}'.format(self.red,self.green,self.blue)
+	
+	def luminance(self):
+		return 0.2126 * self.red + 0.7152 * self.green + 0.0722 * self.blue
 
 #Color Contants
 ALICEBLUE = RGB(240, 248, 255)

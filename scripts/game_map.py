@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 
-from typing import Iterable, Iterator, Optional, TYPE_CHECKING
+from typing import Tuple, Iterable, Iterator, Optional, TYPE_CHECKING
 
 
 import numpy as np  # type: ignore
+import random
 from tcod.console import Console
 
 
 from scripts.entity import Actor
 import scripts.tile_types
+from scripts.color_constants import RGB, colors
 
 
 if TYPE_CHECKING:
@@ -17,6 +19,8 @@ if TYPE_CHECKING:
     from scripts.entity import Entity
 
 
+# Color selection list (for walls ATM).
+color_list = list(colors.values())
 
 class GameMap:
     def __init__(
@@ -25,8 +29,11 @@ class GameMap:
         self.engine = engine
         self.width, self.height = width, height
         self.entities = set(entities)
+        self.wall_base_color = random.choice(color_list)
+        self.wall_fg_color = self.get_fg_color(self.wall_base_color)
         self.tiles = np.full((width, height), fill_value=scripts.tile_types.wall, order="F")
 
+        
         # Tiles the player can currently see.
         self.visible = np.full(
             (width, height), fill_value=False, order="F"
@@ -75,24 +82,32 @@ class GameMap:
     def initialize_map(self) -> None:
         """Generate the map and precompute random wall colors using NumPy."""
         # Create an array to store the RGB color for each tile (width x height x 3 for RGB)
-        self.wall_colors = np.zeros((self.width, self.height, 3), dtype=int)
+        self.wall_colors = np.zeros((self.width, self.height, 2, 3), dtype=int)
         
-        # Generate a random hue variation for wall tiles
-
         # Loop through all tiles
         for x in range(self.width):
             for y in range(self.height):
                 if not self.tiles[x, y]["walkable"] and not self.tiles[x, y]["transparent"]:  # If it's a wall
-                    # Get the base light bg color
-                    base_color = np.array(self.tiles[x, y]["light"][2])
+
                     # Random variance.
                     hue_variation = np.random.randint(-30, 30, size=3)
 
-                    self.wall_colors[x, y] = np.clip(base_color + hue_variation, 0, 255)  # Apply variation
+                    self.wall_colors[x, y, 1] = np.clip(self.wall_base_color + hue_variation, 0, 255)  # Apply variation to gb.
+                    # Apply fg color.
+                    self.wall_colors[x, y, 0] = self.wall_fg_color
+
+                    # Change fg according to bg luminance.
+                    #self.tiles[x, y]["light"][1] = self.get_fg_color(self.wall_base_color)
                 else:
                     # Non-wall tiles keep their original color
-                    self.wall_colors[x, y] = self.tiles[x, y]["light"][2]
+                    self.wall_colors[x, y, 1] = self.tiles[x, y]["light"]["bg"]
 
+
+    def get_fg_color(self, bg_color: RGB) -> Tuple[int, int, int]:
+        luminance = bg_color.luminance()
+        print(luminance)
+
+        return (210, 210, 210) if luminance < 128 else (20, 20, 20)
             
     def render(self, console: Console) -> None:
         """
@@ -110,7 +125,8 @@ class GameMap:
         wall_mask = ~self.tiles["walkable"] & ~self.tiles["transparent"]
 
         # Replace the background color ('bg') of wall tiles with precomputed colors
-        tiles_with_wall_colors["bg"][wall_mask] = self.wall_colors[wall_mask]
+        tiles_with_wall_colors["bg"][wall_mask] = self.wall_colors[wall_mask, 1]
+        tiles_with_wall_colors["fg"][wall_mask] = self.wall_colors[wall_mask, 0]
 
         console.rgb[0 : self.width, 0 : self.height] = np.select(
             condlist=[self.visible, self.explored],

@@ -1,5 +1,5 @@
 from typing import Tuple
-from scripts.color_constants import colors
+
 
 import numpy as np  # type: ignore
 import random
@@ -24,8 +24,6 @@ tile_dt = np.dtype(
     ]
 )
 
-# Color selection list (for walls ATM).
-color_list = list(colors.values())
 
 def new_tile(
     *,
@@ -50,6 +48,6 @@ floor = new_tile(
 wall = new_tile(
     walkable=False,
     transparent=False,
-    dark=(ord("#"), (25, 25, 25), (33, 37, 41)),
-    light=(ord("#"), (25, 25, 25), random.choice(color_list)), # (33, 37, 69), (52, 83, 117)
+    dark=(ord("#"), (60, 60, 60), (33, 37, 41)),
+    light=(ord("#"), (255, 255, 255), (0, 0, 0)), # (33, 37, 69), (52, 83, 117)
 )
