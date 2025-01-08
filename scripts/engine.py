@@ -1,4 +1,6 @@
-from typing import Iterable, Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from tcod.context import Context
 from tcod.console import Console
@@ -12,33 +14,25 @@ from libtcodpy import (
     FOV_SYMMETRIC_SHADOWCAST,
 )
 
-from scripts.entity import Entity
-from scripts.game_map import GameMap
-from scripts.input_handlers import EventHandler
+from scripts.input_handlers import MainGameEventHandler
+
+if TYPE_CHECKING:
+    from scripts.entity import Actor
+    from scripts.game_map import GameMap
+    from scripts.input_handlers import EventHandler
 
 class Engine:
-    def __init__(self, event_handler: EventHandler, game_map: GameMap, player: Entity):
-        self.event_handler = event_handler
-        self.game_map = game_map
+    gamemap: GameMap
+    
+    def __init__(self, player: Actor):
+        self.event_handler: EventHandler = MainGameEventHandler(self)
         self.player = player
-        self.update_fov()
 
     
     def handle_enemy_turns(self) -> None:
-        for entity in self.game_map.entities - {self.player}:
-            print(f"The {entity.name} wonders when it will get a turn to smash.")
-
-
-    def handle_events(self, events: Iterable[Any]) -> None:
-        for event in events:
-            action = self.event_handler.dispatch(event)
-
-            if action is None:
-                continue
-
-            action.perform(self, self.player)
-            self.handle_enemy_turns()
-            self.update_fov()
+        for entity in set(self.game_map.actors) - {self.player}:
+            if entity.ai:
+                entity.ai.perform()
 
 
     def update_fov(self) -> None:
@@ -55,6 +49,12 @@ class Engine:
 
     def render(self, console: Console, context: Context) -> None:
         self.game_map.render(console)
+
+        console.print(
+            x=1,
+            y=47,
+            string=f"HP: {self.player.fighter.hp}/{self.player.fighter.max_hp}",
+        )
 
         context.present(console)
 

@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import random
 from typing import Iterator, List, Tuple, TYPE_CHECKING
+from abc import ABC, abstractmethod
 
 import tcod
+import numpy as np
 
 import scripts.entity_factories
 from scripts.game_map import GameMap
@@ -11,16 +13,16 @@ import scripts.tile_types
 
 
 if TYPE_CHECKING:
-    from scripts.entity import Entity
+    from scripts.engine import Engine
 
 
-# Basic Rectangular Room
-class RectangularRoom:
-    def __init__(self, x: int, y: int, width: int, height: int):
-        self.x1 = x
-        self.y1 = y
-        self.x2 = x + width
-        self.y2 = y + height
+# Base Room.
+class Room:
+    def __init__(self, x1: int, y1: int, x2: int, y2: int):
+        self.x1 = x1
+        self.y1 = y1
+        self.x2 = x2
+        self.y2 = y2
 
     @property
     def center(self) -> Tuple[int, int]:
@@ -29,19 +31,74 @@ class RectangularRoom:
 
         return center_x, center_y
     
-    @property
-    def inner(self) -> Tuple[slice, slice]:
-        """Return the inner area of this room as a 2D array index."""
-        return slice(self.x1 + 1, self.x2), slice(self.y1 + 1, self.y2)
+    @abstractmethod
+    def inner(self) -> Tuple[slice, slice] | Tuple[np.ndarray, np.ndarray]:
+        """
+        Return the inncer area of the room.
+        Subclasses must overwrite this function accordingly.
+        """
+        pass
 
-    def intersects(self, other: RectangularRoom) -> bool:
-        """Return True if this room overlaps with another RectangularRoom."""
+    def intersects(self, other: Room) -> bool:
+        """Return True if this room overlaps with another Room."""
         return (
             self.x1 <= other.x2
             and self.x2 >= other.x1
             and self.y1 <= other.y2
             and self.y2 >= other.y1
         )
+
+
+# Basic Rectangular Room
+class RectangularRoom(Room):
+    def __init__(self, x: int, y: int, width: int, height: int):
+        super().__init__(x1=x, y1=y, x2=x + width, y2=y + height)
+    
+    @property
+    def inner(self) -> Tuple[slice, slice]:
+        """Return the inner area of this room as a 2D array index."""
+        return slice(self.x1 + 1, self.x2), slice(self.y1 + 1, self.y2)
+
+
+# TODO: Base Circular Room
+class CircularRoom(Room):
+    def __init__(self, x, y, radius):
+        super().__init__(x1=x, y1=y, x2=x+radius, y2=y+radius)
+        self.radius = radius
+        self.cx, self.cy = super().center
+
+    @property
+    def inner(self) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Return the inner area of this room as the exact circular area.
+        """
+        y, x = np.mgrid[self.y1:self.y2+1, self.x1:self.x2+1]
+
+        # Circle equation
+        circle_mask = ((x - self.cx) ** 2 + (y - self.cy) ** 2) <= self.radius ** 2
+
+        return np.where(circle_mask)
+
+
+# TODO: Basic Eliptical Room
+class ElipticalRoom(Room):
+    def __init__(self, x: int, y: int, width: int, height: int):
+        super().__init__(x1=x, y1=y, x2=x + width, y2=y + height)
+        self.cx = self.center[0]
+        self.cy = self.center[1]
+        self.radius_x = width / 2
+        self.radius_y = height / 2
+
+    @property
+    def inner(self) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Return the inner area of this room as the exact ellipse-shaped area.
+        This returns a tuple of two numpy arrays: (x_indices, y_indices).
+        """
+        y, x = np.mgrid[self.y1:self.y2+1, self.x1:self.x2+1]
+        ellipse_mask = (((x - self.cx) ** 2) / (self.radius_x ** 2) +
+                        ((y - self.cy) ** 2) / (self.radius_y ** 2)) <= 1
+        return np.where(ellipse_mask)
 
 
 def place_entities(
@@ -58,6 +115,7 @@ def place_entities(
                 scripts.entity_factories.imp.spawn(dungeon, x, y)
             else:
                 scripts.entity_factories.vampire.spawn(dungeon, x, y)
+
 
 def tunnel_between(
         start: Tuple[int, int], end: Tuple[int, int]
@@ -86,10 +144,11 @@ def generate_dungeon(
     map_width: int,
     map_height: int,
     max_monsters_per_room: int,
-    player: Entity,
+    engine: Engine,
 ) -> GameMap:
     """Generate a new dungeon map."""
-    dungeon = GameMap(map_width, map_height, entities=[player])
+    player = engine.player
+    dungeon = GameMap(engine, map_width, map_height, entities=[player])
 
     rooms: List[RectangularRoom] = []
 
@@ -113,7 +172,7 @@ def generate_dungeon(
 
         if len(rooms) == 0:
             # The first room, where the player starts.
-            player.x, player.y = new_room.center
+            player.place(*new_room.center, dungeon)
         else:  # All rooms after the first.
             # Dig out a tunnel between this room and the previous one.
             for x, y in tunnel_between(rooms[-1].center, new_room.center):
