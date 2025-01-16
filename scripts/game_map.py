@@ -105,8 +105,6 @@ class GameMap:
 
     def get_fg_color(self, bg_color: RGB) -> Tuple[int, int, int]:
         luminance = bg_color.luminance()
-        print(luminance)
-
         return (210, 210, 210) if luminance < 128 else (20, 20, 20)
             
     def render(self, console: Console) -> None:

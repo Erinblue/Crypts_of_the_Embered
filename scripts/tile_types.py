@@ -4,6 +4,8 @@ from typing import Tuple
 import numpy as np  # type: ignore
 import random
 
+import scripts.color
+
 
 # Tile graphics structured type compatible with Console.tiles_rgb.
 graphic_dt = np.dtype(
@@ -36,18 +38,18 @@ def new_tile(
 
 
 # SHROUD represents unexplored, unseen tiles.
-SHROUD = np.array((ord(" "), (255, 255, 255), (0, 0, 0)), dtype=graphic_dt)
+SHROUD = np.array((ord(" "), (255, 255, 255), scripts.color.console_bg), dtype=graphic_dt) #181425 hex bg.
 
 
 floor = new_tile(
     walkable=True,
     transparent=True,
-    dark=(ord("."), (60, 60, 60), (0, 0, 0)),
-    light=(ord("."), (180, 180, 180), (0, 0, 0))
+    dark=(ord("."), scripts.color.floor_dark_fg, scripts.color.console_bg),
+    light=(ord("."), scripts.color.floor_light_fg, scripts.color.console_bg)
 )
 wall = new_tile(
     walkable=False,
     transparent=False,
-    dark=(ord("#"), (60, 60, 60), (33, 37, 41)),
-    light=(ord("#"), (255, 255, 255), (0, 0, 0)), # (33, 37, 69), (52, 83, 117)
+    dark=(ord("#"), scripts.color.wall_dark_fg, scripts.color.console_bg),
+    light=(ord("#"), (255, 255, 255), (0, 0, 0)),
 )

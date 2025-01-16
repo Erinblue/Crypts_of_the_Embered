@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from tcod.context import Context
 from tcod.console import Console
 from tcod.map import compute_fov
 from libtcodpy import (
@@ -15,6 +14,10 @@ from libtcodpy import (
 )
 
 from scripts.input_handlers import MainGameEventHandler
+from scripts.render_functions import render_bar, render_names_at_mouse_location
+from scripts.message_log import MessageLog
+import scripts.game_data
+import scripts.color
 
 if TYPE_CHECKING:
     from scripts.entity import Actor
@@ -26,6 +29,8 @@ class Engine:
     
     def __init__(self, player: Actor):
         self.event_handler: EventHandler = MainGameEventHandler(self)
+        self.message_log = MessageLog()
+        self.mouse_location = (0, 0)
         self.player = player
 
     
@@ -47,15 +52,27 @@ class Engine:
         self.game_map.explored |= self.game_map.visible
 
 
-    def render(self, console: Console, context: Context) -> None:
+    def render(self, console: Console) -> None:
         self.game_map.render(console)
 
-        console.print(
-            x=1,
-            y=47,
-            string=f"HP: {self.player.fighter.hp}/{self.player.fighter.max_hp}",
+        self.message_log.render(
+            console=console,
+            x=0,
+            y=scripts.game_data.map_height + 3,
+            width=scripts.game_data.screen_width,
+            height=6
         )
 
-        context.present(console)
+        render_bar(
+            console=console,
+            current_value=self.player.fighter.hp,
+            maximum_value=self.player.fighter.max_hp,
+            total_width=scripts.game_data.screen_width
+        )
 
-        console.clear()
+        render_names_at_mouse_location(
+            console=console,
+            x=0,
+            y=scripts.game_data.map_height,
+            engine=self
+        )
