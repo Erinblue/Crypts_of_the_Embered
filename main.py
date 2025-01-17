@@ -1,12 +1,13 @@
 #!E:\Alejandro\Python\Scripts\python
 import copy
+import traceback
 
 import tcod
 
 import os
 
 import scripts.game_data
-import scripts.color
+import scripts.color as color
 
 from scripts.engine import Engine
 import scripts.entity_factories
@@ -25,7 +26,7 @@ def main():
     max_rooms = scripts.game_data.max_rooms
 
     max_monsters_per_room = scripts.game_data.max_monsters_per_room
-
+    max_items_per_room = scripts.game_data.max_items_per_room
     os.environ["SDL_RENDER_SCALE_QUALITY"] = "nearest"
 
     tileset = tcod.tileset.load_tilesheet(
@@ -46,6 +47,7 @@ def main():
         map_width=map_width,
         map_height=map_height,
         max_monsters_per_room=max_monsters_per_room,
+        max_items_per_room=max_items_per_room,
         engine=engine,
     )
     engine.update_fov()
@@ -66,11 +68,19 @@ def main():
         )
         context.present(root_console, keep_aspect=True, integer_scaling=True)
         while True:
-            root_console.clear(bg=scripts.color.console_bg)
+            root_console.clear(bg=color.console_bg)
             engine.event_handler.on_render(console=root_console)
             context.present(root_console)
 
-            engine.event_handler.handle_events(context)
+            try:
+                for event in tcod.event.wait():
+                    context.convert_event(event)
+                    engine.event_handler.handle_events(event)
+            except Exception:  # Handle exceptions in game.
+                traceback.print_exc()  # Print error to stderr.
+                # Then print the error to the message log.
+                engine.message_log.add_message(traceback.format_exc(), color.error)
+
 
 
 

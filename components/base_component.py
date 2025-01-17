@@ -5,11 +5,16 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from scripts.engine import Engine
     from scripts.entity import Entity
+    from scripts.game_map import GameMap
 
 
 class BaseComponent:
-    entity: Entity  # Owning entity instance.
+    parent: Entity  # Owning entity instance.
 
     @property
+    def gamemap(self) -> GameMap:
+        return self.parent.gamemap
+    
+    @property
     def engine(self) -> Engine:
-        return self.entity.gamemap.engine
+        return self.gamemap.engine

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
+
+from collections import Counter
 
 import scripts.color
 import scripts.game_data
@@ -13,13 +15,28 @@ if TYPE_CHECKING:
 
 def get_names_at_location(x: int, y: int, game_map: GameMap) -> str:
     if not game_map.in_bounds(x, y) or not game_map.visible[x, y]:
-        return ""
-    
-    names = ", ".join(
-        entity.name for entity in game_map.entities if entity.x == x and entity.y == y
-    )
+        return ""       
+    names: Iterable = []
 
-    return names.capitalize()
+    for entity in game_map.entities:
+        if entity.x == x and entity.y == y:
+            names.append(entity.name)
+
+    # TODO: Add (xn) to same name entities.
+    names_counter = Counter(names)
+
+    names_list = []
+    
+    for name in names_counter.keys():
+        count = names_counter[name]
+        if count > 1:
+            names_list.append(f"{name}(x{count})")
+        elif count == 1:
+            names_list.append(f"{name}")
+
+    formatted_names = ", ".join(names_list)
+    
+    return formatted_names.capitalize()
 
 
 def render_bar(
