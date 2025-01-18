@@ -22,7 +22,6 @@ def get_names_at_location(x: int, y: int, game_map: GameMap) -> str:
         if entity.x == x and entity.y == y:
             names.append(entity.name)
 
-    # TODO: Add (xn) to same name entities.
     names_counter = Counter(names)
 
     names_list = []

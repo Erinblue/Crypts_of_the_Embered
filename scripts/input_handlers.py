@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 
-from typing import Optional, TYPE_CHECKING
+from typing import Callable, Optional, Tuple, TYPE_CHECKING
 
 import tcod.event
 from tcod import libtcodpy
@@ -57,6 +57,10 @@ WAIT_KEYS = {
     tcod.event.KeySym.KP_5,
     tcod.event.KeySym.CLEAR,
 }
+CONFIRM_KEYS = {
+    tcod.event.KeySym.RETURN,
+    tcod.event.KeySym.KP_ENTER,
+}
 QUIT_KEYS = {
     tcod.event.KeySym.ESCAPE,
 }
@@ -68,13 +72,16 @@ MENU_KEYS = {
 PICK_UP_KEYS = {
     tcod.event.KeySym.g,
 }
+LOOK_KEYS = {
+    tcod.event.KeySym.KP_DIVIDE,
+}
 MODIFIER_KEYS = {
-    tcod.event.KeySym.LSHIFT,
-    tcod.event.KeySym.RSHIFT,
-    tcod.event.KeySym.LCTRL,
-    tcod.event.KeySym.RCTRL,
-    tcod.event.KeySym.LALT,
-    tcod.event.KeySym.RALT,
+    "LSHIFT": tcod.event.KeySym.LSHIFT,
+    "RSHIFT": tcod.event.KeySym.RSHIFT,
+    "LCTRL": tcod.event.KeySym.LCTRL,
+    "RCTRL": tcod.event.KeySym.RCTRL,
+    "LALT": tcod.event.KeySym.LALT,
+    "RALT": tcod.event.KeySym.RALT,
 }
 
 
@@ -128,7 +135,7 @@ class AskUserEventHandler(EventHandler):
     
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[Action]:
         """By default any key exits this input handler."""
-        if event.sym in MODIFIER_KEYS:
+        if event.sym in MODIFIER_KEYS.values():
             return None
         return self.on_exit()
     
@@ -242,6 +249,117 @@ class InventoryDropHandler(InventoryEventHandler):
         return actions.DropItem(self.engine.player, item)
         
 
+class SelectIndexHandler(AskUserEventHandler):
+    """Handles asking the user for an index on the map."""
+
+    def __init__(self, engine: Engine):
+        """Sets the cursor to the player when this handler is constructed."""
+        super().__init__(engine)
+        player = self.engine.player
+        engine.mouse_location = player.x, player.y
+
+    def on_render(self, console: tcod.console.Console) -> None:
+        """Highlight the tile under the cursor."""
+        super().on_render(console)
+        x, y = self.engine.mouse_location
+        console.rgb["bg"][x, y] = color.lightgrey
+        console.rgb["fg"][x, y] = color.black
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[Action]:
+        """Check for key movement or confirmation keys."""
+        key = event.sym
+        if key in MOVE_KEYS:
+            modifier = 1    # Holding modifier keys speeds up movement.
+            if event.mod & (MODIFIER_KEYS["LSHIFT"] | MODIFIER_KEYS["RSHIFT"]):
+                modifier *= 5
+            if event.mod & (MODIFIER_KEYS["LCTRL"] | MODIFIER_KEYS["RCTRL"]):
+                modifier *= 10
+            if event.mod & (MODIFIER_KEYS["LALT"] | MODIFIER_KEYS["RALT"]):
+                modifier *= 20
+            
+            x, y = self.engine.mouse_location
+            dx, dy = MOVE_KEYS[key]
+            x += dx * modifier
+            y += dy * modifier
+            # Clamp the cursor index to the map size.
+            x = max(0, min(x, self.engine.game_map.width - 1))
+            y = max(0, min(y, self.engine.game_map.height - 1))
+            self.engine.mouse_location = x, y
+            return None
+        elif key in CONFIRM_KEYS:
+            return self.on_index_selected(*self.engine.mouse_location)
+        return super().ev_keydown(event)
+    
+    def ev_mousebuttondown(self, event: tcod.event.MouseButtonDown) -> Optional[Action]:
+        """Left click confirms a selection."""
+        if self.engine.game_map.in_bounds(*event.tile):
+            if event.button == 1:
+                return self.on_index_selected(*event.tile)
+        return super().ev_mousebuttondown(event)
+        
+    def on_index_selected(self, x: int, y: int) -> Optional[Action]:
+        """Called when an index is selected."""
+        raise NotImplementedError()
+    
+
+class LookHandler(SelectIndexHandler):
+    """Lets the player look around using the keyboard."""
+
+    def on_index_selected(self, x: int, y: int) -> None:
+        """Return to main handler."""
+        self.engine.event_handler = MainGameEventHandler(self.engine)
+
+
+class SingleRangedAttackHandler(SelectIndexHandler):
+    """Handles targeting a single enemy. Only the enemy selected will be affected."""
+
+    def __init__(
+        self,
+        engine: Engine,
+        callback: Callable[[Tuple[int, int]], Optional[Action]],
+    ):
+        super().__init__(engine)
+
+        self.callback = callback
+
+    def on_index_selected(self, x: int, y: int) -> Optional[Action]:
+        return self.callback((x, y))
+
+
+class AreaRangedAttackHandler(SelectIndexHandler):
+    """Handles targeting an area within a given radius. Any entity within the area will be affected."""
+
+    def __init__(
+        self,
+        engine: Engine,
+        radius: int,
+        callback: Callable[[Tuple[int, int]], Optional[Action]],
+    ):
+        super().__init__(engine)
+
+        self.radius = radius
+        self.callback = callback
+
+    def on_render(self, console: tcod.console.Console) -> None:
+        """Highlight the tile under the cursor."""
+        super().on_render(console)
+    
+        x, y = self.engine.mouse_location
+
+        # Draw rectangle around targeted area, so the player can see.
+        console.draw_frame(
+            x=x - self.radius - 1,
+            y=y - self.radius - 1,
+            width=self.radius ** 2,
+            height=self.radius ** 2,
+            fg=color.red,
+            clear=False,
+        )
+
+    def on_index_selected(self, x: int, y: int) -> Optional[Action]:
+        return self.callback((x, y))
+
+
 class MainGameEventHandler(EventHandler):
     def __init__(self, engine: Engine):
         self.engine = engine
@@ -269,7 +387,9 @@ class MainGameEventHandler(EventHandler):
             self.engine.event_handler = InventoryActivateHandler(self.engine)
         elif key == MENU_KEYS["DROP_MENU"]:
             self.engine.event_handler = InventoryDropHandler(self.engine)
-        
+        elif key in LOOK_KEYS:
+            self.engine.event_handler = LookHandler(self.engine)
+
         return action
 
 

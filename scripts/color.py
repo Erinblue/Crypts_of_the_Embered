@@ -3,6 +3,7 @@ from scripts.color_constants import RGB, colors
 
 white = colors["white"]
 black = colors["black"]
+red = colors["red1"]
 
 lightgrey = colors["lightgrey"]
 coldgrey = colors["coldgrey"]
@@ -10,6 +11,8 @@ warmgrey = colors["warmgrey"]
 
 player_atk = colors["lightyellow3"]
 enemy_atk = colors["orange1"]
+needs_target = (0x3F, 0xFF, 0xFF)
+status_effect_applied = (0x3F, 0xFF, 0x3F)
 
 player_die = colors["orangered1"]
 enemy_die = colors["indianred3"]
