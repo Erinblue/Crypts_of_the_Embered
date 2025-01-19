@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import lzma
+import pickle
 from typing import TYPE_CHECKING
 
 from tcod.console import Console
@@ -14,7 +16,6 @@ from libtcodpy import (
 )
 
 import scripts.exceptions as exceptions
-from scripts.input_handlers import MainGameEventHandler
 from scripts.render_functions import render_bar, render_names_at_mouse_location
 from scripts.message_log import MessageLog
 import scripts.game_data
@@ -23,13 +24,11 @@ import scripts.color
 if TYPE_CHECKING:
     from scripts.entity import Actor
     from scripts.game_map import GameMap
-    from scripts.input_handlers import EventHandler
 
 class Engine:
     gamemap: GameMap
     
     def __init__(self, player: Actor):
-        self.event_handler: EventHandler = MainGameEventHandler(self)
         self.message_log = MessageLog()
         self.mouse_location = (0, 0)
         self.player = player
@@ -80,3 +79,9 @@ class Engine:
             y=scripts.game_data.map_height,
             engine=self
         )
+
+    def save_as(self, filename: str) -> None:
+        """Save this Engine instance as a compressed file."""
+        save_data = lzma.compress(pickle.dumps(self))
+        with open(filename, "wb") as f:
+            f.write(save_data)

@@ -11,7 +11,8 @@ from tcod.console import Console
 
 from scripts.entity import Actor, Item
 import scripts.tile_types
-from scripts.color_constants import RGB, colors
+from scripts.color_constants import RGB
+import scripts.color as color
 
 
 if TYPE_CHECKING:
@@ -19,8 +20,6 @@ if TYPE_CHECKING:
     from scripts.entity import Entity
 
 
-# Color selection list (for walls ATM).
-color_list = list(colors.values())
 
 class GameMap:
     def __init__(
@@ -29,7 +28,7 @@ class GameMap:
         self.engine = engine
         self.width, self.height = width, height
         self.entities = set(entities)
-        self.wall_base_color = random.choice(color_list)
+        self.wall_base_color = random.choice(color.random)
         self.wall_fg_color = self.get_fg_color(self.wall_base_color)
         self.tiles = np.full((width, height), fill_value=scripts.tile_types.wall, order="F")
 
