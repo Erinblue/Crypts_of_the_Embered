@@ -3,6 +3,10 @@ screen_width = 16*4
 screen_height = 16*3
 
 gui_height = 8
+gui_width = screen_width - 12
+level_up_width = 38
+level_up_height = 8
+
 map_width = screen_width
 map_height = screen_height - gui_height - 1
 
@@ -14,6 +18,16 @@ max_monsters_per_room = 2
 max_items_per_room = 2
 
 number_of_main_menu_chars = 30
+
+# Letters
+a = "(a) "
+b = "(b) "
+c = "(c) "
+
+# Stats
+con = "Constitution"
+fue = "Strength"
+agi = "Agility"
 
 # Extra.
 BOX_DECORATION_DOUBLE = "╔═╗║ ║╚═╝"

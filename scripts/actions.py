@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional, Tuple, TYPE_CHECKING
 
-import scripts.color
+import scripts.color as color
 import scripts.exceptions as exceptions
 
 if TYPE_CHECKING:
@@ -92,6 +92,20 @@ class WaitAction(Action):
         pass
 
 
+class TakeStairsAction(Action):
+    def perform(self) -> None:
+        """
+        Take the stairs, if any exist at the entity's location.
+        """
+        if (self.entity.x, self.entity.y) == self.engine.game_map.downstairs_location:
+            self.engine.game_world.generate_floor()
+            self.engine.message_log.add_message(
+                "You descend to the next floor.", color.descend
+            )
+        else:
+            raise exceptions.Impossible("There are no stairs here.")
+        
+
 class ActionWithDirection(Action):
     def __init__(self, entity: Actor, dx: int, dy: int):
         super().__init__(entity)
@@ -141,9 +155,9 @@ class MeleeAction(ActionWithDirection):
 
         attack_desc = f"{self.entity.name.capitalize()} kicks {target.name}"
         if self.entity is self.engine.player:
-            attack_color = scripts.color.player_atk
+            attack_color = color.player_atk
         else:
-            attack_color = scripts.color.enemy_atk
+            attack_color = color.enemy_atk
 
         if damage > 0:
             self.engine.message_log.add_message(

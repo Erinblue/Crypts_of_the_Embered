@@ -19,9 +19,13 @@ from scripts.actions import (
     PickupAction,
     WaitAction,
 )
+
+#from colorama import init
+#from termcolor import colored
+
 import scripts.color as color
 import scripts.exceptions as exceptions
-from scripts.game_data import BOX_DECORATION_DOUBLE, screen_width
+import scripts.game_data as game_data
 
 
 if TYPE_CHECKING:
@@ -74,6 +78,7 @@ MENU_KEYS = {
     "LOG_MENU": tcod.event.KeySym.v,
     "ACTIVATE_MENU": tcod.event.KeySym.i,
     "DROP_MENU": tcod.event.KeySym.d,
+    "CHARACTER_INFO_MENU": tcod.event.KeySym.c,
 }
 PICK_UP_KEYS = {
     tcod.event.KeySym.g,
@@ -82,12 +87,12 @@ LOOK_KEYS = {
     tcod.event.KeySym.KP_DIVIDE,
 }
 MODIFIER_KEYS = {
-    "LSHIFT": tcod.event.KeySym.LSHIFT,
-    "RSHIFT": tcod.event.KeySym.RSHIFT,
-    "LCTRL": tcod.event.KeySym.LCTRL,
-    "RCTRL": tcod.event.KeySym.RCTRL,
-    "LALT": tcod.event.KeySym.LALT,
-    "RALT": tcod.event.KeySym.RALT,
+    "LSHIFT": tcod.event.Modifier.LSHIFT,
+    "RSHIFT": tcod.event.Modifier.RSHIFT,
+    "LCTRL": tcod.event.Modifier.LCTRL,
+    "RCTRL": tcod.event.Modifier.RCTRL,
+    "LALT": tcod.event.Modifier.LALT,
+    "RALT": tcod.event.Modifier.RALT,
 }
 
 
@@ -99,6 +104,8 @@ If an action is returned it will be attempted and if it's valid then
 MainGameEventHandler will become the active handler.
 """
 
+# Colorama
+#init()
 
 class BaseEventHandler(tcod.event.EventDispatch[ActionOrHandler]):
     def handle_events(self, event: tcod.event.Event) -> BaseEventHandler:
@@ -130,6 +137,10 @@ class EventHandler(BaseEventHandler):
             if not self.engine.player.is_alive:
                 # The player was killed sometime during of after the action.
                 return GameOverEventHandler(self.engine)
+            elif self.engine.player.level.requires_level_up:
+                # The player is alive and must level up.
+                print("Level Up.")
+                return LevelUpEventHandler(self.engine)
             return MainGameEventHandler(self.engine)    # Return to the main handler.
         return self
 
@@ -192,7 +203,14 @@ class AskUserEventHandler(EventHandler):
     
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
         """By default any key exits this input handler."""
-        if event.sym in MODIFIER_KEYS.values():
+        if event.sym in [
+            tcod.event.KeySym.LSHIFT,
+            tcod.event.KeySym.RSHIFT,
+            tcod.event.KeySym.LCTRL,
+            tcod.event.KeySym.RCTRL,
+            tcod.event.KeySym.LALT,
+            tcod.event.KeySym.RALT,
+        ]:
             return None
         return self.on_exit()
     
@@ -209,6 +227,182 @@ class AskUserEventHandler(EventHandler):
         """
         return MainGameEventHandler(self.engine)
     
+
+class CharacterScreenEventHandler(AskUserEventHandler):
+    TITLE = "Character"
+
+    def on_render(self, console: tcod.console.Console) -> None:
+        super().on_render(console)
+
+        width = len(self.TITLE) + 12
+
+        if self.engine.player.x <= 30:
+            x = game_data.screen_width - width - 1
+        else:
+            x = 1
+
+        y = 1
+
+        console.draw_frame(
+            x=x,
+            y=y,
+            width=width,
+            height=7,
+            clear=True,
+            fg=color.lightgrey,
+            bg=color.console_bg,
+            decoration=game_data.BOX_DECORATION_DOUBLE,
+        )
+        console.print_box(
+            x=x,
+            y=y,
+            width=width,
+            height=1,
+            string=self.TITLE,
+            fg=color.black,
+            bg=color.lightgrey,
+            alignment=tcod.libtcodpy.CENTER,
+        )
+
+        align = 10
+
+        console.print(
+            x=x+1, y=y+1, string=f"Level: {self.engine.player.level.current_level : >{width - len("Level: ") - 2}}"
+        )
+        console.print(
+            x=x+1, y=y+4, string=f"Attack: {self.engine.player.fighter.power : >{width - len("Attack: ") - 2}}"
+        )
+        console.print(
+            x=x+1, y=y+5, string=f"Defense: {self.engine.player.fighter.defense : >{width - len("Defense: ") - 2}}"
+        )
+        console.print(
+            x=x+1, y=y+2, string=f"EXP: {self.engine.player.level.current_xp : >{width - len("EXP: ") - 2}}"
+        )
+        console.print(
+            x=x+1, y=y+3, string=f"To next Level: {self.engine.player.level.experience_to_next_level : >{width - len("To next Level: ") - 2}}"
+        )
+
+
+        
+
+
+class LevelUpEventHandler(AskUserEventHandler):
+    TITLE = "Level Up"
+
+    def on_render(self, console: tcod.console.Console) -> None:
+        super().on_render(console)
+
+        if self.engine.player.x <= 30:
+            x = game_data.screen_width - game_data.level_up_width - 1
+        else:
+            x = 1
+
+        y = 1
+
+        console.draw_frame(
+            x=x,
+            y=y,
+            width=game_data.level_up_width,
+            height=game_data.level_up_height,
+            clear=True,
+            fg=color.lightgrey,
+            bg=color.console_bg,
+            decoration=game_data.BOX_DECORATION_DOUBLE,
+        )
+        console.print_box(
+            x=x,
+            y=y,
+            width=game_data.level_up_width,
+            height=1,
+            string=self.TITLE,
+            fg=color.black,
+            bg=color.lightgrey,
+            alignment=tcod.libtcodpy.CENTER,
+        )
+
+        console.print(x=x+1, y=2, string="You level up!")
+        console.print(x=x+1, y=3, string="Select an attribute to increase:")
+
+        self.print_attribute_selection(
+            console=console,
+            x=x+1,
+            y=5,
+            letter=game_data.a,
+            attribute_name=game_data.con,
+            amount=20,
+            amount_tag="HP",
+            color=color.constitution,
+            attribute=self.engine.player.fighter.max_hp,
+        )
+        self.print_attribute_selection(
+            console=console,
+            x=x+1,
+            y=6,
+            letter=game_data.b,
+            attribute_name=game_data.fue,
+            amount="1",
+            amount_tag="attack",
+            color=color.strength,
+            attribute=self.engine.player.fighter.power,
+        )
+        self.print_attribute_selection(
+            console=console,
+            x=x+1,
+            y=7,
+            letter=game_data.c,
+            attribute_name=game_data.agi,
+            amount=1,
+            amount_tag="defense",
+            color=color.agility,
+            attribute=self.engine.player.fighter.defense,
+        )
+        
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
+        player = self.engine.player
+        key = event.sym
+        index = key - tcod.event.KeySym.a
+
+        if 0 <= index <= 2:
+            match index:
+                case 0:
+                    player.level.increase_max_hp()
+                case 1:
+                    player.level.increase_power()
+                case 2:
+                    player.level.increase_defense()
+        else:
+            self.engine.message_log.add_message(
+                "Invalid key entry.", color.invalid
+            )
+            return None
+
+        return super().ev_keydown(event)
+    
+    def ev_mousebuttondown(
+        self, event: tcod.event.MouseButtonDown
+    ) -> Optional[ActionOrHandler]:
+        """
+        Don't allow the player to click to exit the menu, like normal.
+        """
+        return None
+    
+    def print_attribute_selection(
+        self,
+        console: tcod.console.Console,
+        x: int,
+        y: int,
+        letter: str,
+        attribute_name: str,
+        amount: str | int,
+        amount_tag: str,
+        color: tuple[int, int, int],
+        attribute: int,
+    ) -> None:
+        console.print(x=x, y=y, string=letter + attribute_name + " [")
+        console.print(x=x+len(letter + attribute_name + " ["), y=y, string=f"+{amount} {amount_tag}", fg=color)
+        console.print(x=x+len(letter + attribute_name + f" [+{amount} {amount_tag}"), y=y, string=f"] from {attribute}")
+        
 
 class InventoryEventHandler(AskUserEventHandler):
     """This handler lets the user select an item.
@@ -233,7 +427,7 @@ class InventoryEventHandler(AskUserEventHandler):
             height = 3
 
         if self.engine.player.x <= 30:
-            x = screen_width - width - 1
+            x = game_data.screen_width - width - 1
         else:
             x = 1
 
@@ -247,7 +441,7 @@ class InventoryEventHandler(AskUserEventHandler):
             clear=True,
             fg=color.lightgrey,
             bg=color.console_bg,
-            decoration=BOX_DECORATION_DOUBLE,
+            decoration=game_data.BOX_DECORATION_DOUBLE,
         )
         # Draw the title box.
         console.print_box(
@@ -334,6 +528,8 @@ class SelectIndexHandler(AskUserEventHandler):
                 modifier *= 10
             if event.mod & (MODIFIER_KEYS["LALT"] | MODIFIER_KEYS["RALT"]):
                 modifier *= 20
+
+            
             
             x, y = self.engine.mouse_location
             dx, dy = MOVE_KEYS[key]
@@ -455,9 +651,15 @@ class MainGameEventHandler(EventHandler):
         action: Optional[Action] = None
 
         key = event.sym
+        modifier = event.mod
         
         player = self.engine.player
 
+        if key == tcod.event.KeySym.LESS and modifier & (
+            MODIFIER_KEYS["LSHIFT"] | MODIFIER_KEYS["RSHIFT"]
+        ):
+            return actions.TakeStairsAction(player)
+        
         if key in MOVE_KEYS:
             dx, dy = MOVE_KEYS[key]
             action = BumpAction(player, dx, dy)
@@ -473,6 +675,8 @@ class MainGameEventHandler(EventHandler):
             return InventoryActivateHandler(self.engine)
         elif key == MENU_KEYS["DROP_MENU"]:
             return InventoryDropHandler(self.engine)
+        elif key == MENU_KEYS["CHARACTER_INFO_MENU"]:
+            return CharacterScreenEventHandler(self.engine)
         elif key in LOOK_KEYS:
             return LookHandler(self.engine)
 
@@ -515,7 +719,7 @@ class HistoryViewer(EventHandler):
         log_console = tcod.console.Console(console.width - 6, console.height - 6)
 
         # Draw a frame with a custom banner title.
-        log_console.draw_frame(0, 0, log_console.width, log_console.height, fg=color.lightgrey, bg=color.console_bg, decoration=BOX_DECORATION_DOUBLE)
+        log_console.draw_frame(0, 0, log_console.width, log_console.height, fg=color.lightgrey, bg=color.console_bg, decoration=game_data.BOX_DECORATION_DOUBLE)
         log_console.print_box(
             0, 0, log_console.width, 1, "╣ Log History ╠", bg=color.console_bg, alignment=libtcodpy.CENTER
         )

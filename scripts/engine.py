@@ -16,17 +16,18 @@ from libtcodpy import (
 )
 
 import scripts.exceptions as exceptions
-from scripts.render_functions import render_bar, render_names_at_mouse_location
+import scripts.render_functions as render_functions
 from scripts.message_log import MessageLog
-import scripts.game_data
+import scripts.game_data as game_data
 import scripts.color
 
 if TYPE_CHECKING:
     from scripts.entity import Actor
-    from scripts.game_map import GameMap
+    from scripts.game_map import GameMap, GameWorld
 
 class Engine:
-    gamemap: GameMap
+    game_map: GameMap
+    game_world: GameWorld
     
     def __init__(self, player: Actor):
         self.message_log = MessageLog()
@@ -60,24 +61,29 @@ class Engine:
 
         self.message_log.render(
             console=console,
-            x=0,
-            y=scripts.game_data.map_height + 3,
-            width=scripts.game_data.screen_width,
-            height=6
+            x=game_data.screen_width - game_data.gui_width,
+            y=game_data.map_height + 3,
+            width=game_data.gui_width,
+            height=6,
         )
 
-        render_bar(
+        render_functions.render_bar(
             console=console,
             current_value=self.player.fighter.hp,
             maximum_value=self.player.fighter.max_hp,
-            total_width=scripts.game_data.screen_width
+            total_width=game_data.screen_width,
         )
 
-        render_names_at_mouse_location(
+        render_functions.render_dungeon_level(
             console=console,
-            x=0,
-            y=scripts.game_data.map_height,
-            engine=self
+            dungeon_level=self.game_world.current_floor,
+            location=(1, game_data.map_height + 3),
+        )
+        render_functions.render_names_at_mouse_location(
+            console=console,
+            x=1,
+            y=game_data.map_height,
+            engine=self,
         )
 
     def save_as(self, filename: str) -> None:

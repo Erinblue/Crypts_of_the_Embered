@@ -18,6 +18,7 @@ player_atk = colors["lightyellow3"]
 enemy_atk = colors["orange1"]
 needs_target = (0x3F, 0xFF, 0xFF)
 status_effect_applied = (0x3F, 0xFF, 0x3F)
+descend = (0x9F, 0x3F, 0xFF)
 
 player_die = colors["orangered1"]
 enemy_die = colors["indianred3"]
@@ -35,6 +36,10 @@ bar_empty = colors["brown2"]
 
 menu_title = colors["lightskyblue2"]
 menu_text = white
+
+constitution = bar_filled
+strength = colors["orangered2"]
+agility = colors["cadmiumyellow"]
 
 random = [
     colors["teal"],
@@ -55,6 +60,8 @@ floor_dark_fg = (100, 100, 100)
 wall_light_fg = (255, 255, 255)
 wall_dark_fg = (100, 100, 100)
 
+stairs_down_light = colors["teal"]
+stairs_down_dark = colors["midnightblue"]
 
 
 

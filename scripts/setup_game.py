@@ -16,9 +16,9 @@ import tcod.libtcodpy
 import scripts.game_data as game_data
 import scripts.color as color
 from scripts.engine import Engine
+from scripts.game_map import GameWorld
 import scripts.entity_factories as entity_factories
 import scripts.input_handlers as input_handlers
-from scripts.procgen import generate_dungeon
 
 
 # Load the background image and remove the alpha channel.
@@ -31,7 +31,8 @@ def new_game() -> Engine:
 
     engine = Engine(player=player)
 
-    engine.game_map = generate_dungeon(
+    engine.game_world = GameWorld(
+        engine=engine,
         max_rooms=game_data.max_rooms,
         room_min_size=game_data.room_min_size,
         room_max_size=game_data.room_max_size,
@@ -39,8 +40,9 @@ def new_game() -> Engine:
         map_height=game_data.map_height,
         max_monsters_per_room=game_data.max_monsters_per_room,
         max_items_per_room=game_data.max_items_per_room,
-        engine=engine,
     )
+
+    engine.game_world.generate_floor()
     engine.update_fov()
 
     engine.message_log.add_message(
