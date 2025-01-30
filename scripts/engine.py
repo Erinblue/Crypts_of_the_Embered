@@ -57,7 +57,9 @@ class Engine:
 
 
     def render(self, console: Console) -> None:
-        self.game_map.render(console)
+        self.game_map.render_map(console)
+
+        self.game_map.render_entities(console)
 
         self.message_log.render(
             console=console,
