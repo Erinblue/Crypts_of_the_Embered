@@ -48,6 +48,6 @@ Para Equipar os Quitar un objeto, úsalo desde el inventario. Los objetos equipa
 
 Mantener `Mayús`, `Ctrl` o `Alt` hace avanzar más casillas en los menús, como el historial o al seleccionar un objetivo.
 
-`Mayús`: 5 casillas.
-`Ctrl`: 10 casillas.
+`Mayús`: 5 casillas.<br>
+`Ctrl`: 10 casillas.<br>
 `Alt`: 20 casillas.
