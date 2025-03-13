@@ -7,6 +7,9 @@
 
 ## Manual/Cómo Jugar
 
+### Objetivo del juego
+Adentrarse a fondo en la mazmorra para encontrar el mítico **Amuleto de Yendor**.
+
 ### 1. Control.
 
 | Dirección/Acción | Teclas |
