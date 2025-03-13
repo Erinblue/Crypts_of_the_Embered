@@ -3,6 +3,7 @@
 **Crypts of the Embered** es un Roguelike Tradicional basado en el [tutorial](https://rogueliketutorials.com/tutorials/tcod/v2/) para Python.
 
 ## Instalación
+![How to install](resources/how_to_install.png)
 
 ## Manual/Cómo Jugar
 
