@@ -32,7 +32,7 @@ class Level(BaseComponent):
 
     @property
     def requires_level_up(self) -> bool:
-        return self.current_xp > self.experience_to_next_level
+        return self.current_xp >= self.experience_to_next_level
     
     def add_xp(self, xp: int) -> None:
         if xp == 0 or self.level_up_base == 0:
@@ -41,12 +41,12 @@ class Level(BaseComponent):
         self.current_xp += xp
 
         self.engine.message_log.add_message(
-            f"You gain {xp} experience points."
+            self.engine.translation.translate("gain_xp", xp=xp)
         )
 
         if self.requires_level_up:
             self.engine.message_log.add_message(
-                f"Level up! You are now level {self.current_level + 1}."
+                self.engine.translation.translate("level_up_message", level=self.current_level + 1)
             )
 
     def increase_level(self) -> None:
@@ -59,7 +59,7 @@ class Level(BaseComponent):
         self.parent.fighter.hp += amount
 
         self.engine.message_log.add_message(
-            "You feel like you can endure more hits!"
+            self.engine.translation.translate("increase_max_hp")
         )
 
         self.increase_level()
@@ -68,7 +68,7 @@ class Level(BaseComponent):
         self.parent.fighter.base_power += amount
 
         self.engine.message_log.add_message(
-            "Your muscles feel stronger!"
+            self.engine.translation.translate("increase_power")
         )
 
         self.increase_level()
@@ -77,7 +77,7 @@ class Level(BaseComponent):
         self.parent.fighter.base_defense += amount
 
         self.engine.message_log.add_message(
-            "Your battle reflexes are getting sharper!"
+            self.engine.translation.translate("increase_defense")
         )
 
         self.increase_level()

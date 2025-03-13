@@ -145,7 +145,8 @@ class Item(Entity):
         color: Tuple[int, int, int] = (255, 255, 255),
         name: str = "<Unnamed>",
         consumable: Optional[Consumable] = None,
-        equippable: Optional[Equippable] = None,   
+        equippable: Optional[Equippable] = None,
+        yendor: bool = False,   
     ):
         super().__init__(
             x=x,
@@ -166,3 +167,5 @@ class Item(Entity):
 
         if self.equippable:
             self.equippable.parent = self
+
+        self.yendor = yendor

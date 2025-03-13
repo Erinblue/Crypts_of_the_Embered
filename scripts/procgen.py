@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import random
-from typing import Dict, Iterator, List, Tuple, TYPE_CHECKING
+from typing import Optional, Dict, Iterator, List, Tuple, TYPE_CHECKING
 from abc import ABC, abstractmethod
 
 import tcod
 import numpy as np
 
+from scripts.game_data import MAX_FLOOR
 import scripts.entity_factories as entity_factories
 from scripts.game_map import GameMap
 import scripts.tile_types as tile_types
@@ -24,24 +25,23 @@ max_items_by_floor = [
 ]
 
 max_monsters_by_floor = [
-    (1, 2),
-    (3, 3),
-    (5, 4),
+    (1, 1),
+    (3, 2),
+    (4, 3),
 ]
 
 item_chances: Dict[int, List[Tuple[Entity, int]]] = {
-    # DEBUG: Daggers and leatherarmor are on Floor 0 to test
-    0: [(entity_factories.health_potion, 35), (entity_factories.dagger, 50), (entity_factories.leather_armor, 50)],
-    2: [(entity_factories.confusion_scroll, 10)],
-    4: [(entity_factories.lightning_scroll, 25)],
-    6: [(entity_factories.fireball_scroll, 25)],
+    0: [(entity_factories.health_potion, 35), (entity_factories.confusion_scroll, 20), (entity_factories.sword, 15)],
+    2: [(entity_factories.lightning_scroll, 25), (entity_factories.chain_mail, 15), (entity_factories.sword, 20)],
+    3: [(entity_factories.fireball_scroll, 20)],
+    4: [(entity_factories.lightning_scroll, 40), (entity_factories.fireball_scroll, 30), (entity_factories.health_potion, 45)],
 }
 
 enemy_chances: Dict[int, List[Tuple[Entity, int]]] = {
     0: [(entity_factories.imp, 80)],
-    3: [(entity_factories.vampire, 15)],
-    5: [(entity_factories.vampire, 30)],
-    7: [(entity_factories.vampire, 60)],
+    2: [(entity_factories.vampire, 15)],
+    3: [(entity_factories.vampire, 30), (entity_factories.minotaur, 8)],
+    5: [(entity_factories.vampire, 60)],
 }
 
 def get_max_value_for_floor(
@@ -62,8 +62,12 @@ def get_entities_at_random(
     weighted_chance_by_floor: Dict[int, List[Tuple[Entity, int]]],
     number_of_entities: int,
     floor: int,
+    exclude: Optional[List[Entity]] = None,
 ) -> List[Entity]:
     entity_weighted_chances = {}
+
+    if exclude is None:
+        exclude = []
 
     for key, values in weighted_chance_by_floor.items():
         if key > floor:
@@ -71,9 +75,10 @@ def get_entities_at_random(
         else:
             for value in values:
                 entity = value[0]
-                weighted_chance = value[1]
+                if entity not in exclude:
+                    weighted_chance = value[1]
 
-                entity_weighted_chances[entity] = weighted_chance
+                    entity_weighted_chances[entity] = weighted_chance
 
     entities = list(entity_weighted_chances.keys())
     entity_weighted_chance_values = list(entity_weighted_chances.values())
@@ -185,8 +190,13 @@ def place_entities(
     )
 
     items: List[Entity] = get_entities_at_random(
-        item_chances, number_of_items, floor_number
+        item_chances, number_of_items, floor_number, exclude=[entity_factories.amulet_of_yendor]
     )
+
+    # Check if the Amulet of Yendor should be placed
+    if not dungeon.amulet_placed and floor_number == MAX_FLOOR:  # MAX_FLOOR is the last floor
+        items.append(entity_factories.amulet_of_yendor)
+        dungeon.amulet_placed = True  # Mark the Amulet as placed
 
     for entity in monsters + items:
         x = random.randint(room.x1 + 1, room.x2 - 1)

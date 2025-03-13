@@ -74,17 +74,17 @@ class Fighter(BaseComponent):
 
     def die(self) -> None:
         if self.engine.player is self.parent:
-            death_msg = "You died!"
+            death_msg = self.engine.translation.translate("player_death")
             death_msg_color = scripts.color.player_die
         else:
-            death_msg = f"{self.parent.name} is dead!"
+            death_msg = self.engine.translation.translate("death_message", entity=self.parent.name)
             death_msg_color = scripts.color.enemy_die
 
         self.parent.char = "%"
         self.parent.color = (191, 0, 0)
         self.parent.blocks_movement = False
         self.parent.ai = None
-        self.parent.name = f"remains of {self.parent.name}"
+        self.parent.name = self.engine.translation.translate("remains", entity=self.parent.name)
         self.parent.render_order = RenderOrder.CORPSE
 
         self.engine.message_log.add_message(death_msg, death_msg_color)

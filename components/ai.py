@@ -97,7 +97,7 @@ class ConfusedEnemy(BaseAI):
         # Revert the AI back to the original state if the effect has run its course.
         if self.turns_remaining <= 0:
             self.engine.message_log.add_message(
-                f"The {self.entity.name} is no longer confused."
+                self.engine.translation.translate("end_confusion_message", target=self.entity.name)
             )
             self.entity.ai = self.previous_ai
         else:

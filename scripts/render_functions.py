@@ -39,7 +39,7 @@ def get_names_at_location(x: int, y: int, game_map: GameMap) -> str:
 
 
 def render_bar(
-    console: Console, current_value: int, maximum_value: int, total_width: int
+    console: Console, current_value: int, maximum_value: int, total_width: int, engine: Engine
 ) -> None:
     bar_width = int(float(current_value) / maximum_value * total_width)
 
@@ -49,18 +49,18 @@ def render_bar(
         )
 
     console.print(
-        x=1, y=scripts.game_data.map_height + 1, string=f"HP: {current_value}/{maximum_value}", fg=scripts.color.bar_text
+        x=1, y=scripts.game_data.map_height + 1, string=f"{engine.translation.translate("hp")}: {current_value}/{maximum_value}", fg=scripts.color.bar_text
     )
 
 
 def render_dungeon_level(
-        console: Console, dungeon_level: int, location: Tuple[int,int]
+        console: Console, dungeon_level: int, location: Tuple[int,int], engine: Engine
 ) -> None:
     """
     Render the level the player is currently on, at the given location.
     """
     x, y = location
-    console.print(x=x, y=y, string=f"Floor: {dungeon_level}")
+    console.print(x=x, y=y, string=engine.translation.translate("floor", dungeon_level=dungeon_level))
 
 
 def render_names_at_mouse_location(

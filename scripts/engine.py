@@ -17,6 +17,7 @@ from libtcodpy import (
 
 import scripts.exceptions as exceptions
 import scripts.render_functions as render_functions
+from scripts.translation import Translation
 from scripts.message_log import MessageLog
 import scripts.game_data as game_data
 import scripts.color
@@ -30,8 +31,10 @@ class Engine:
     game_world: GameWorld
     
     def __init__(self, player: Actor):
+        self.translation = Translation(language="es")
         self.message_log = MessageLog()
         self.mouse_location = (0, 0)
+        self.amulet_picked: bool = False
         self.player = player
 
     
@@ -74,12 +77,14 @@ class Engine:
             current_value=self.player.fighter.hp,
             maximum_value=self.player.fighter.max_hp,
             total_width=game_data.screen_width,
+            engine=self,
         )
 
         render_functions.render_dungeon_level(
             console=console,
             dungeon_level=self.game_world.current_floor,
             location=(1, game_data.map_height + 3),
+            engine=self,
         )
         render_functions.render_names_at_mouse_location(
             console=console,

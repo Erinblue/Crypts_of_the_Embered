@@ -1,5 +1,11 @@
 # DEBUG
 project_cmd.bat
+todo.py
+*.spec
 
 # Saved games
 *.sav
+
+# dist folder
+/dist
+/build

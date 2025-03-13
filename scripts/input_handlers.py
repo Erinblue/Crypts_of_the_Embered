@@ -26,6 +26,7 @@ from scripts.actions import (
 import scripts.color as color
 import scripts.exceptions as exceptions
 import scripts.game_data as game_data
+#from scripts.setup_game import new_game
 
 
 if TYPE_CHECKING:
@@ -65,7 +66,6 @@ MOVE_KEYS = {
 WAIT_KEYS = {
     tcod.event.KeySym.PERIOD,
     tcod.event.KeySym.KP_5,
-    tcod.event.KeySym.CLEAR,
 }
 CONFIRM_KEYS = {
     tcod.event.KeySym.RETURN,
@@ -134,12 +134,14 @@ class EventHandler(BaseEventHandler):
             return action_or_state
         if self.handle_action(action_or_state):
             # A valid action was performed.
+            if self.engine.amulet_picked:
+                return GameWonEventHandler(self.engine)
             if not self.engine.player.is_alive:
                 # The player was killed sometime during of after the action.
                 return GameOverEventHandler(self.engine)
             elif self.engine.player.level.requires_level_up:
                 # The player is alive and must level up.
-                print("Level Up.")
+                print(self.engine.translation.translate("level_up"))
                 return LevelUpEventHandler(self.engine)
             return MainGameEventHandler(self.engine)    # Return to the main handler.
         return self
@@ -189,7 +191,6 @@ class PopupMessage(BaseEventHandler):
             console.height // 2,
             self.text,
             fg=color.lightgrey,
-            bg=color.console_bg,
             alignment=tcod.libtcodpy.CENTER,
         )
 
@@ -229,12 +230,15 @@ class AskUserEventHandler(EventHandler):
     
 
 class CharacterScreenEventHandler(AskUserEventHandler):
-    TITLE = "Character"
+
+    def __init__(self, engine):
+        super().__init__(engine)
+        self.TITLE = self.engine.translation.translate("character_title")
 
     def on_render(self, console: tcod.console.Console) -> None:
         super().on_render(console)
 
-        width = len(self.TITLE) + 12
+        width = len(self.TITLE) + 14
 
         if self.engine.player.x <= 30:
             x = game_data.screen_width - width - 1
@@ -264,22 +268,21 @@ class CharacterScreenEventHandler(AskUserEventHandler):
             alignment=tcod.libtcodpy.CENTER,
         )
 
-        align = 10
 
         console.print(
-            x=x+1, y=y+1, string=f"Level: {self.engine.player.level.current_level : >{width - len("Level: ") - 2}}"
+            x=x+1, y=y+1, string=f"{self.engine.translation.translate("level")}: {self.engine.player.level.current_level : >{width - len(f"{self.engine.translation.translate("level")}: ") - 2}}"
         )
         console.print(
-            x=x+1, y=y+4, string=f"Attack: {self.engine.player.fighter.power : >{width - len("Attack: ") - 2}}"
+            x=x+1, y=y+4, string=f"{self.engine.translation.translate("power")}: {self.engine.player.fighter.power : >{width - len(f"{self.engine.translation.translate("power")}: ") - 2}}"
         )
         console.print(
-            x=x+1, y=y+5, string=f"Defense: {self.engine.player.fighter.defense : >{width - len("Defense: ") - 2}}"
+            x=x+1, y=y+5, string=f"{self.engine.translation.translate("defense")}: {self.engine.player.fighter.defense : >{width - len(f"{self.engine.translation.translate("defense")}: ") - 2}}"
         )
         console.print(
-            x=x+1, y=y+2, string=f"EXP: {self.engine.player.level.current_xp : >{width - len("EXP: ") - 2}}"
+            x=x+1, y=y+2, string=f"{self.engine.translation.translate("exp")}: {self.engine.player.level.current_xp : >{width - len(f"{self.engine.translation.translate("exp")}: ") - 2}}"
         )
         console.print(
-            x=x+1, y=y+3, string=f"To next Level: {self.engine.player.level.experience_to_next_level : >{width - len("To next Level: ") - 2}}"
+            x=x+1, y=y+3, string=f"{self.engine.translation.translate("exp_to_next_level")}: {self.engine.player.level.experience_to_next_level : >{width - len(f"{self.engine.translation.translate("exp_to_next_level")}: ") - 2}}"
         )
 
 
@@ -288,6 +291,10 @@ class CharacterScreenEventHandler(AskUserEventHandler):
 
 class LevelUpEventHandler(AskUserEventHandler):
     TITLE = "Level Up"
+
+    def __init__(self, engine):
+        super().__init__(engine)
+        self.TITLE = self.engine.translation.translate("level_up_title")
 
     def on_render(self, console: tcod.console.Console) -> None:
         super().on_render(console)
@@ -320,17 +327,17 @@ class LevelUpEventHandler(AskUserEventHandler):
             alignment=tcod.libtcodpy.CENTER,
         )
 
-        console.print(x=x+1, y=2, string="You level up!")
-        console.print(x=x+1, y=3, string="Select an attribute to increase:")
+        console.print(x=x+1, y=2, string=self.engine.translation.translate("level_up"))
+        console.print(x=x+1, y=3, string=self.engine.translation.translate("choose_attr"))
 
         self.print_attribute_selection(
             console=console,
             x=x+1,
             y=5,
             letter=game_data.a,
-            attribute_name=game_data.con,
+            attribute_name=self.engine.translation.translate("constitution"),
             amount=20,
-            amount_tag="HP",
+            amount_tag=self.engine.translation.translate("hp"),
             color=color.constitution,
             attribute=self.engine.player.fighter.max_hp,
         )
@@ -339,9 +346,9 @@ class LevelUpEventHandler(AskUserEventHandler):
             x=x+1,
             y=6,
             letter=game_data.b,
-            attribute_name=game_data.fue,
-            amount="1",
-            amount_tag="attack",
+            attribute_name=self.engine.translation.translate("strength"),
+            amount=1,
+            amount_tag=self.engine.translation.translate("power"),
             color=color.strength,
             attribute=self.engine.player.fighter.power,
         )
@@ -350,9 +357,9 @@ class LevelUpEventHandler(AskUserEventHandler):
             x=x+1,
             y=7,
             letter=game_data.c,
-            attribute_name=game_data.agi,
+            attribute_name=self.engine.translation.translate("agility"),
             amount=1,
-            amount_tag="defense",
+            amount_tag=self.engine.translation.translate("defense"),
             color=color.agility,
             attribute=self.engine.player.fighter.defense,
         )
@@ -373,7 +380,7 @@ class LevelUpEventHandler(AskUserEventHandler):
                     player.level.increase_defense()
         else:
             self.engine.message_log.add_message(
-                "Invalid key entry.", color.invalid
+                self.engine.translation.translate("invalid_key"), color.invalid
             )
             return None
 
@@ -394,14 +401,14 @@ class LevelUpEventHandler(AskUserEventHandler):
         y: int,
         letter: str,
         attribute_name: str,
-        amount: str | int,
+        amount: int,
         amount_tag: str,
         color: tuple[int, int, int],
         attribute: int,
     ) -> None:
         console.print(x=x, y=y, string=letter + attribute_name + " [")
         console.print(x=x+len(letter + attribute_name + " ["), y=y, string=f"+{amount} {amount_tag}", fg=color)
-        console.print(x=x+len(letter + attribute_name + f" [+{amount} {amount_tag}"), y=y, string=f"] from {attribute}")
+        console.print(x=x+len(letter + attribute_name + f" [+{amount} {amount_tag}"), y=y, string=f"] → {attribute + amount}")
         
 
 class InventoryEventHandler(AskUserEventHandler):
@@ -421,7 +428,7 @@ class InventoryEventHandler(AskUserEventHandler):
         number_of_items_in_inventory = len(self.engine.player.inventory.items)
 
         height = number_of_items_in_inventory + 2
-        width = len(self.TITLE) + 4
+        width = len(self.TITLE) + 20
 
         if height <= 3:
             height = 3
@@ -468,7 +475,7 @@ class InventoryEventHandler(AskUserEventHandler):
 
                 console.print(x + 1, y + i + 1, item_string)
         else:
-            console.print(x + 1, y + 1, "(Empty)")
+            console.print(x + 1, y + 1, self.engine.translation.translate("empty"))
 
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
         player = self.engine.player
@@ -479,7 +486,7 @@ class InventoryEventHandler(AskUserEventHandler):
             try:
                 selected_item = player.inventory.items[index]
             except IndexError:
-                self.engine.message_log.add_message("Invalid entry.", color.invalid)
+                self.engine.message_log.add_message(self.engine.translation.translate("invalid_key"), color.invalid)
                 return None
             return self.on_item_selected(selected_item)
         return super().ev_keydown(event)
@@ -493,6 +500,10 @@ class InventoryActivateHandler(InventoryEventHandler):
     """Handle using an inventory item."""
     
     TITLE = "Select an item to use"
+
+    def __init__(self, engine):
+        super().__init__(engine)
+        self.TITLE = self.engine.translation.translate("use_item_title")
 
     def on_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
         if item.consumable:
@@ -508,6 +519,10 @@ class InventoryDropHandler(InventoryEventHandler):
     """Handle dropping an inventory item."""
 
     TITLE = "Select an item to drop"
+
+    def __init__(self, engine):
+        super().__init__(engine)
+        self.TITLE = self.engine.translation.translate("drop_item_title")
 
     def on_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
         """Drop this item."""
@@ -696,6 +711,76 @@ class MainGameEventHandler(EventHandler):
         return action
 
 
+
+class GameWonEventHandler(EventHandler):
+    def __init__(self, engine):
+        super().__init__(engine)
+        self.TITLE = self.engine.translation.translate("game_won_title")
+
+    def on_render(self, console: tcod.console.Console) -> None:
+        super().on_render(console)
+        """Render the victory screen."""
+        # Draw the victory window.
+        
+        width = console.width - 10
+
+        x = (console.width - width) // 2
+        y = (console.height // 2) - 8
+
+        # Print frame box
+        console.draw_frame(
+            x=x,
+            y=y,
+            width=width,
+            height=10,
+            fg=color.lightgrey,
+            bg=color.console_bg,
+            decoration=game_data.BOX_DECORATION_DOUBLE,
+        )
+        console.print_box(
+            x=x,
+            y=y,
+            width=width,
+            height=1,
+            string=self.TITLE,
+            fg=color.black,
+            bg=color.lightgrey,
+            alignment=libtcodpy.CENTER,
+        )
+        
+        # Print text
+        console.print(
+            x=console.width // 2 - 1,
+            y=y+2,
+            string=self.engine.translation.translate("congratulation"),
+            alignment=libtcodpy.CENTER,
+        )
+        console.print(
+            x=console.width // 2,
+            y=y+4,
+            string=self.engine.translation.translate("victory_message"),
+            fg=color.victory_message,
+            alignment=libtcodpy.CENTER,
+        )
+        console.print(
+            x=console.width // 2,
+            y=y+7,
+            string=self.engine.translation.translate("endgame_options"),
+            alignment=libtcodpy.CENTER,
+        )
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
+        key = event.sym
+
+        if key in (tcod.event.KeySym.q, tcod.event.KeySym.ESCAPE):
+            from scripts.setup_game import MainMenu # Return to main menu.
+            return MainMenu()
+        elif key == tcod.event.KeySym.s:
+            pass    # TODO: Implement saving to records.
+            
+            
+        
+
 class GameOverEventHandler(EventHandler):
     def on_quit(self) -> None:
         """Handle exiting out of a finished game."""
@@ -734,7 +819,7 @@ class HistoryViewer(EventHandler):
         # Draw a frame with a custom banner title.
         log_console.draw_frame(0, 0, log_console.width, log_console.height, fg=color.lightgrey, bg=color.console_bg, decoration=game_data.BOX_DECORATION_DOUBLE)
         log_console.print_box(
-            0, 0, log_console.width, 1, "╣ Log History ╠", bg=color.console_bg, alignment=libtcodpy.CENTER
+            0, 0, log_console.width, 1, f"╣ {self.engine.translation.translate("log_title")} ╠", bg=color.console_bg, alignment=libtcodpy.CENTER
         )
 
         # Render the message log using the cursor parameter.

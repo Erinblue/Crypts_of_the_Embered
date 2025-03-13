@@ -8,6 +8,7 @@ import scripts.exceptions as exceptions
 if TYPE_CHECKING:
     from scripts.engine import Engine
     from scripts.entity import Actor, Entity, Item
+    from scripts.input_handlers import EventHandler
 
 
 
@@ -40,7 +41,7 @@ class PickupAction(Action):
     def __init__(self, entity: Actor):
         super().__init__(entity)
 
-    def perform(self) -> None:
+    def perform(self) -> Optional[EventHandler]:
         actor_location_x = self.entity.x
         actor_location_y = self.entity.y
         inventory = self.entity.inventory
@@ -48,16 +49,21 @@ class PickupAction(Action):
         for item in self.engine.game_map.items:
             if actor_location_x == item.x and actor_location_y == item.y:
                 if len(inventory.items) >= inventory.capacity:
-                    raise exceptions.Impossible("Your inventory is full.")
+                    raise exceptions.Impossible(self.engine.translation.translate("inventory_full"))
 
                 self.engine.game_map.entities.remove(item)
                 item.parent = self.entity.inventory
                 inventory.items.append(item)
 
-                self.engine.message_log.add_message(f"You pick up the {item.name}!")
+                self.engine.message_log.add_message(self.engine.translation.translate("pick_item", item_name=item.name))
+                
+                # TODO: Check for win condition.
+                if item.yendor:
+                    self.engine.amulet_picked = True
+                    
                 return
 
-        raise exceptions.Impossible("There is nothing here to pick up.")
+        raise exceptions.Impossible(self.engine.translation.translate("nothing_to_pick"))
         
 
 class ItemAction(Action):
@@ -115,10 +121,10 @@ class TakeStairsAction(Action):
         if (self.entity.x, self.entity.y) == self.engine.game_map.downstairs_location:
             self.engine.game_world.generate_floor()
             self.engine.message_log.add_message(
-                "You descend to the next floor.", color.descend
+                self.engine.translation.translate("descend"), color.descend
             )
         else:
-            raise exceptions.Impossible("There are no stairs here.")
+            raise exceptions.Impossible(self.engine.translation.translate("no_stairs"))
         
 
 class ActionWithDirection(Action):
@@ -164,11 +170,12 @@ class MeleeAction(ActionWithDirection):
         target = self.target_actor
 
         if not target or target == self:
-            raise exceptions.Impossible("Nothing to attack.")
+            raise exceptions.Impossible(self.engine.translation.translate("nothing_to_attack"))
         
         damage = self.entity.fighter.power - target.fighter.defense
 
-        attack_desc = f"{self.entity.name.capitalize()} kicks {target.name}"
+        attack_desc = self.engine.translation.translate("attack_desc", entity=self.entity.name.capitalize(), target=target.name)
+        
         if self.entity is self.engine.player:
             attack_color = color.player_atk
         else:
@@ -176,12 +183,12 @@ class MeleeAction(ActionWithDirection):
 
         if damage > 0:
             self.engine.message_log.add_message(
-                f"{attack_desc} for {damage} hit points.", attack_color
+                self.engine.translation.translate("attack_hit", attack_desc=attack_desc, damage=damage), attack_color
             )
             target.fighter.hp -= damage
         else:
             self.engine.message_log.add_message(
-                f"{attack_desc} but does no damage.", attack_color
+                self.engine.translation.translate("attack_dodge", attack_desc=attack_desc), attack_color
             )
 
 
@@ -191,12 +198,12 @@ class MovementAction(ActionWithDirection):
 
         if not self.engine.game_map.in_bounds(dest_x, dest_y):
             # Destination is out of bounds.
-            raise exceptions.Impossible("That way is blocked.")
+            raise exceptions.Impossible(self.engine.translation.translate("way_blocked"))
         if not self.engine.game_map.tiles["walkable"][dest_x, dest_y]:
             # Destination is blocked by a tile.
-            raise exceptions.Impossible("That way is blocked.")
+            raise exceptions.Impossible(self.engine.translation.translate("way_blocked"))
         if self.engine.game_map.get_blocking_entity_at_location(dest_x, dest_y):
             # Destination is blocked by entity.
-            raise exceptions.Impossible("That way is blocked.")
+            raise exceptions.Impossible(self.engine.translation.translate("way_blocked"))
 
         self.entity.move(self.dx, self.dy)

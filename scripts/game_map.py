@@ -28,6 +28,7 @@ class GameMap:
         self.engine = engine
         self.width, self.height = width, height
         self.entities = set(entities)
+        self.amulet_placed = False
         self.wall_base_color = random.choice(color.random)
         self.wall_fg_color = self.get_fg_color(self.wall_base_color)
         self.tiles = np.full((width, height), fill_value=scripts.tile_types.wall, order="F")

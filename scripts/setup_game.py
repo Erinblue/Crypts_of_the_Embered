@@ -17,6 +17,7 @@ import scripts.game_data as game_data
 import scripts.color as color
 from scripts.engine import Engine
 from scripts.game_map import GameWorld
+from scripts.translation import Translation
 import scripts.entity_factories as entity_factories
 import scripts.input_handlers as input_handlers
 
@@ -44,7 +45,7 @@ def new_game() -> Engine:
     engine.update_fov()
 
     engine.message_log.add_message(
-        "Hello and welcome, adventurer, to yet another dungeon!", color.welcome_text
+        engine.translation.translate("welcome_message"), color.welcome_text
     )
 
     dagger = copy.deepcopy(entity_factories.dagger)
@@ -76,6 +77,7 @@ class MainMenu(input_handlers.BaseEventHandler):
     def __init__(self):
         super().__init__()
         self.frame_data = []
+        self.translation = Translation(language="es")
 
     def on_render(self, console: tcod.console.Console) -> None:
         """Render the main menu on a background image."""
@@ -83,42 +85,51 @@ class MainMenu(input_handlers.BaseEventHandler):
 
         self.draw_thick_frame(
             console=console,
-            char_list=["@", "#", "*", "&", ".", "$", "!"],
+            char_list=["@", "#", "*", "?", ".", "%", "!", "/", ">"],
             width=console.width,
             height=console.height - 5,
             thickness=12,
             density=200,
         )
-                        
+
+        # Game Title            
         console.print(
             console.width // 2,
-            console.height // 2 - 4,
-            "CRYPTS OF THE EMBERED",
+            console.height // 2 - 6,
+            string=game_data.game_title,
             fg=color.menu_title,
-            bg=color.black,
             alignment=tcod.libtcodpy.CENTER,
-            bg_blend=tcod.libtcodpy.BKGND_ALPHA(64),
         )
         console.print(
             console.width // 2,
+            console.height // 2 - 5,
+            string="─" * (len(game_data.game_title) + 2),
+            fg=color.menu_title,
+            alignment=tcod.libtcodpy.CENTER,
+        )
+        # Game Author
+        console.print(
+            console.width // 2,
             console.height - 2,
-            "By ErinBlue",
+            string=self.translation.translate("author"),
             fg=color.menu_title,
             alignment=tcod.libtcodpy.CENTER,
         )
 
         menu_width = 24
         for i, text in enumerate(
-            ["[N] Play New Game", "[C] Continue Last Game", "[Q] Quit"]
+            [
+                self.translation.translate("new_game"),
+                self.translation.translate("continue_game"),
+                self.translation.translate("quit_game"),
+            ]
         ):
             console.print(
                 console.width // 2,
                 console.height // 2 - 2 + i,
-                text.ljust(menu_width),
+                string=text.ljust(menu_width),
                 fg=color.menu_text,
-                bg=color.black,
                 alignment=tcod.libtcodpy.CENTER,
-                bg_blend=tcod.libtcodpy.BKGND_ALPHA(64),
             )
 
     def ev_keydown(
@@ -130,10 +141,10 @@ class MainMenu(input_handlers.BaseEventHandler):
             try:
                 return input_handlers.MainGameEventHandler(load_game("savegame.sav"))
             except FileNotFoundError:
-                return input_handlers.PopupMessage(self, "No saved game to load.")
+                return input_handlers.PopupMessage(self, self.translation.translate("no_saved_game"))
             except Exception as exc:
                 traceback.print_exc()   # Print to stderr.
-                return input_handlers.PopupMessage(self, f"Failed to load save:\n{exc}")
+                return input_handlers.PopupMessage(self, f"{self.translation.translate("failed_save_game")}:\n{exc}")
         elif event.sym == tcod.event.KeySym.n:
             return input_handlers.MainGameEventHandler(new_game())
         

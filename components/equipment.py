@@ -57,12 +57,12 @@ class Equipment(BaseComponent):
     
     def unequip_message(self, item_name: str) -> None:
         self.parent.gamemap.engine.message_log.add_message(
-            f"You remove the {item_name}."
+            self.parent.gamemap.engine.translation.translate("unequip_message", item_name=item_name)
         )
 
     def equip_message(self, item_name: str) -> None:
         self.parent.gamemap.engine.message_log.add_message(
-            f"You equip the {item_name}."
+            self.parent.gamemap.engine.translation.translate("equip_message", item_name=item_name)
         )
 
     def equip_to_slot(self, slot: str, item: Item, add_message: bool) -> None:
@@ -101,7 +101,6 @@ class Equipment(BaseComponent):
                 case EquipmentType.RING:
                     slot = "ring"
         
-        print(f"Slot is {equippable_item.equippable.equipment_type in EquipmentType}")
 
         if getattr(self, slot) == equippable_item:
             self.unequip_from_slot(slot, add_message)

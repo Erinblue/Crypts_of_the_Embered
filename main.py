@@ -1,9 +1,11 @@
-#!E:\Alejandro\Python\Scripts\python
+#!E:\Alejandro\Python\venv\roguelike_tutorial\Scripts\python
 import traceback
 
 import tcod
 
 import os
+
+import tcod.libtcodpy
 
 import scripts.game_data
 import scripts.color as color
@@ -36,22 +38,23 @@ def main():
 
     handler: input_handlers.BaseEventHandler = setup_game.MainMenu()
 
-    with tcod.context.new_terminal(
-        screen_width,
-        screen_height,
+    with tcod.context.new(
+        columns=screen_width,
+        rows=screen_height,
         tileset=tileset,
-        title="Roguelike Tutorial",
+        title="Crypts of the Embered",
         vsync=True,
     ) as context:
+        console_width, console_height = context.recommended_console_size()
         root_console = tcod.console.Console(
-            screen_width, screen_height, order="F"
+            console_width, console_height, order="F"
         )
         context.present(root_console, keep_aspect=True, integer_scaling=True)
         try:
             while True:
                 root_console.clear(bg=color.console_bg)
                 handler.on_render(console=root_console)
-                context.present(root_console)
+                context.present(root_console, keep_aspect=True, integer_scaling=True)
 
                 try:
                     for event in tcod.event.wait():

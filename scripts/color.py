@@ -28,6 +28,7 @@ impossible = (0x80, 0x80, 0x80)
 error = (0xFF, 0x40, 0x40)
 
 welcome_text = colors["cadetblue1"]
+victory_message = colors["darkgoldenrod2"]
 health_recovered = (0x0, 0xFF, 0x0)
 
 bar_text = white
@@ -61,7 +62,7 @@ wall_light_fg = (255, 255, 255)
 wall_dark_fg = (100, 100, 100)
 
 stairs_down_light = colors["teal"]
-stairs_down_dark = colors["midnightblue"]
+stairs_down_dark = colors["dodgerblue4"]  #deepskyblue4
 
 
 
