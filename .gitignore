@@ -1,6 +1,7 @@
 # DEBUG
 project_cmd.bat
 todo.py
+/__pycache__/*
 *.spec
 
 # Saved games
