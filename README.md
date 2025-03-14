@@ -43,7 +43,7 @@ Adentrarse a fondo en la mazmorra para encontrar el mítico **Amuleto de Yendor*
 Para usar o soltar un objeto dentro de los menús Inventario o Soltar objeto, o dentro de cualquier otro menú, pulsa la tecla que aparece a su lado entre paréntesis. Por ejemplo:
 <br>`(a) Poción de Salud` En este caso habría que pulsar `a`.
 
-Para Equipar os Quitar un objeto, úsalo desde el inventario. Los objetos equipados tienen una `E` mayúscula a su derecha.
+Para Equipar o Quitar un objeto, úsalo desde el inventario. Los objetos equipados tienen una `E` mayúscula a su derecha.
 
 * Teclas adicionales.
 
