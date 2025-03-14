@@ -22,12 +22,13 @@ Adentrarse a fondo en la mazmorra para encontrar el mítico **Amuleto de Yendor*
 | Salir/Cancelar | `Escape` |
 | Coger objeto | `g` |
 | Esperar/Pasar turno | `5`, `.` |
+| Bajar escaleras | `Mayús + <>` |
 
 * Teclado numérico.
 
 | Dirección | Tecla |
 | :---: | :---: |
-| `7` `8` `9`<br>`4` `5` `6`<br>`1` `2` `3` | `↖` `↑` `↗`<br>`←` `E` `→`<br>`↙` `↓` `↘` |
+| `↖` `↑` `↗`<br>`←` `E` `→`<br>`↙` `↓` `↘` | `7` `8` `9`<br>`4` `5` `6`<br>`1` `2` `3` |
 
 ### 2. Menús.
 
